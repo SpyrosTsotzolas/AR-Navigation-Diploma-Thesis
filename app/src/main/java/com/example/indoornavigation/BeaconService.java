@@ -69,9 +69,9 @@ public class BeaconService extends Worker {
                 for (ADStructure structure : structures) {
                     if (structure instanceof IBeacon) {
                         final IBeacon iBeacon = (IBeacon) structure;
-                        //Distance = (float) calculateDistance(result.getRssi());
+                       // Distance = (float) calculateDistance(result.getRssi());
                         Distance = (float) calculateDistance(applyKalmanFilterToRssi(result.getRssi()));
-                        //DistanceSecondMethod = (float) calculateDistanceSecondMethod(result.getRssi());
+                       // DistanceSecondMethod = (float) calculateDistanceSecondMethod(result.getRssi());
                         DistanceSecondMethod = (float) calculateDistanceSecondMethod(applyKalmanFilterToRssi(result.getRssi()));
                         if (db.getCount() == 0 || !db.checkIfSpecificMinorIsInDB(iBeacon.getMinor())) {
                             db.addBeacon(new BeaconInfo(iBeacon.getMinor(), Distance, result.getRssi()));
@@ -90,8 +90,8 @@ public class BeaconService extends Worker {
 //                            if (task.isSuccessful()) {
 //                                Log.i(TAG, "iffffff");
 //                                DocumentSnapshot documentSnapshot = task.getResult();
-//                                Distance = (float) calculateDistance(result.getRssi());
-//                                DistanceSecondMethod = (float) calculateDistanceSecondMethod(result.getRssi());
+//                                Distance = (float) calculateDistance(applyKalmanFilterToRssi(result.getRssi()));
+//                                DistanceSecondMethod = (float) calculateDistanceSecondMethod(applyKalmanFilterToRssi(result.getRssi()));
 //                                if (documentSnapshot != null && documentSnapshot.exists()) {
 //                                    docref.update("RSSI", FieldValue.arrayUnion(result.getRssi()));
 //                                    docref.update("Distance(m)", FieldValue.arrayUnion(Distance));
@@ -145,7 +145,7 @@ public class BeaconService extends Worker {
         return Result.success();
     }
     
-        // Method Apply Filter
+    // Method Apply Filter
     private double applyKalmanFilterToRssi(double rssi){
         double filterrssi = kalmanFilter.applyFilter(rssi);
         return filterrssi;

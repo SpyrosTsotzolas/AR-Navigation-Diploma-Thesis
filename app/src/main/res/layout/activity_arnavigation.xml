@@ -6,24 +6,39 @@
     android:layout_height="match_parent"
     tools:context="com.example.indoornavigation.ARNavigation">
 
-    <Button
-        android:id="@+id/resolve"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginBottom="16dp"
-        android:background="@drawable/navigate_btn_bg"
-        android:text="@string/navigate_in_ar"
-        android:textColor="@android:color/white"
-        app:layout_constraintBottom_toBottomOf="@+id/fragment"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="1.0"
-        app:layout_constraintStart_toStartOf="parent" />
+<!--    <Button-->
+<!--        android:id="@+id/resolve"-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:layout_marginStart="16dp"-->
+<!--        android:layout_marginEnd="16dp"-->
+<!--        android:layout_marginBottom="16dp"-->
+<!--        android:background="@drawable/navigate_btn_bg"-->
+<!--        android:text="@string/navigate_in_ar"-->
+<!--        android:textColor="@android:color/white"-->
+<!--        app:layout_constraintBottom_toBottomOf="@+id/fragment"-->
+<!--        app:layout_constraintEnd_toEndOf="parent"-->
+<!--        app:layout_constraintHorizontal_bias="1.0"-->
+<!--        app:layout_constraintStart_toStartOf="parent" />-->
+
 
     <fragment
         android:id="@+id/fragment"
         android:name="com.example.indoornavigation.CloudAnchorFragment"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="match_parent"
+        tools:layout_editor_absoluteX="0dp"
+        tools:layout_editor_absoluteY="0dp" />
+
+    <TextView
+        android:id="@+id/textView"
+        android:layout_width="241dp"
+        android:layout_height="70dp"
+        android:text="TextView"
+        app:layout_constraintBottom_toBottomOf="@+id/fragment"
+        app:layout_constraintEnd_toEndOf="@+id/fragment"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/fragment" />
+    <!--        app:layout_constraintBottom_toTopOf="@+id/resolve"-->
+
 </androidx.constraintlayout.widget.ConstraintLayout>
