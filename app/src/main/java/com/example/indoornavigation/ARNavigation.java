@@ -92,7 +92,7 @@ public class ARNavigation extends AppCompatActivity implements SensorEventListen
     double distance437=0, distance570=0, distance574 = 0;
     public double[] distanceVector = {0,0,0}, calculatedPosition = {0,0,0};
     //    double[][] positions = new double[][]{{390, 182},{664,218},{929,181}};
-    double[][] positions = new double[][]{{56, 196},{132, 283},{236, 196}};
+    double[][] positions = new double[][]{{0.8, 2},{1.90, 2.80},{2.50, 2}};
     // public BeaconService beaconService;
     //private boolean mUserRequestedInstall = true;
 
@@ -411,15 +411,18 @@ public class ARNavigation extends AppCompatActivity implements SensorEventListen
 
             if (MinorType == ConstantsVariables.minor_437) {
                 distance437 =  beaconInfo.getDistance();
-                distanceVector[0] = distance437 / 100000; //km to meters
+                //distance437 = 2.20;
+                distanceVector[0] = distance437; //km to meters
 
             } else if (MinorType == ConstantsVariables.minor_570) {
                 distance570 = beaconInfo.getDistance();
-                distanceVector[1] = distance570 / 100000;
+               // distance570 = 1.10;
+                distanceVector[1] = distance570;
 
             } else if (MinorType == ConstantsVariables.minor_574) {
                 distance574 = beaconInfo.getDistance();
-                distanceVector[2] = distance574 / 100000;
+               // distance574 = 0.50;
+                distanceVector[2] = distance574;
             }
         }
        // Log.i(TAG, String.valueOf(distanceVector.length));
@@ -429,7 +432,9 @@ public class ARNavigation extends AppCompatActivity implements SensorEventListen
         NonLinearLeastSquaresSolver solver = new NonLinearLeastSquaresSolver(new TrilaterationFunction(positions, distanceVector), new LevenbergMarquardtOptimizer());
         LeastSquaresOptimizer.Optimum optimum = solver.solve();
         calculatedPosition = optimum.getPoint().toArray();
-        Log.i(TAG, "calculatedPosition : " + String.valueOf(calculatedPosition[0]));
+        calculatedPosition[0] = calculatedPosition[0] * 100;
+        calculatedPosition[1] = calculatedPosition[1] * 100;
+        
         directUser();
 
     }
@@ -442,26 +447,25 @@ public class ARNavigation extends AppCompatActivity implements SensorEventListen
         Vector3 position = Vector3.add(cameraPos, cameraForward.scaled((float)Math.round(orientationAngles[2] * 10f) / 10f));
         Quaternion rotation = arrow.getLocalRotation();
         arrow.setLocalPosition(position);
-       // updateLocationUser();
-        Log.d("location", String.valueOf(calculatedPosition[0]));
+
         textView.setText(new StringBuilder().append(calculatedPosition[0]).append(" ").append(calculatedPosition[1]).append("num of steps: ").append(numSteps).toString());
 
  //        // ΜΠΛΕΚΑΣ ------ ΒΛΑΧΟΣ
-//        if (shortestPath.get(0) == 1 && shortestPath.get(1) == 2) {
-//
-//            if (calculatedPosition[0] >= 20 && calculatedPosition[0] <= 90 && calculatedPosition[1] >= 190 && calculatedPosition[1] <= 270) {
-//                Log.d("mphke", "eftia");
-//                arrow.setLocalRotation(rotation); //forward
-//                arrow.setRenderable(mObjRenderable);
-//            }
-//            else if (calculatedPosition[0] >= 90 && calculatedPosition[0] <= 170 && calculatedPosition[1] >= 190 && calculatedPosition[1] <= 280) {
-//                Log.d("mphke", "dexia");
-//                arrow.setWorldRotation(Quaternion.axisAngle(new Vector3(0.0f, 2.0f, 0.0f), 45.0f)); // right
-//                arrow.setRenderable(mObjRenderable);
-//            }
-//
-//
-//        }
+        if (shortestPath.get(0) == 1 && shortestPath.get(1) == 2) {
+
+            if (calculatedPosition[0] >= 20 && calculatedPosition[0] <= 90 && calculatedPosition[1] >= 190 && calculatedPosition[1] <= 280) {
+                Log.d("mphke", "forward");
+                arrow.setLocalRotation(rotation); //forward
+                arrow.setRenderable(mObjRenderable);
+            }
+            else if (calculatedPosition[0] >= 90 && calculatedPosition[0] <= 170 && calculatedPosition[1] >= 190 && calculatedPosition[1] <= 280) {
+                Log.d("mphke", "left");
+                arrow.setWorldRotation(Quaternion.axisAngle(new Vector3(0.0f, -2.3f, 0.0f), 45.0f)); //left
+                arrow.setRenderable(mObjRenderable);
+            }
+
+
+        }
 //        else if (shortestPath.get(0) == 2 && shortestPath.get(1) == 1) {
 //
 //            // left - forward
