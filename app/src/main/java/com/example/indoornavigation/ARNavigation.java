@@ -13,6 +13,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Gravity;
+import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -24,7 +25,11 @@ import androidx.work.WorkRequest;
 
 import com.example.indoornavigation.mapping.Location;
 import com.example.indoornavigation.mapping.LocationFactory;
+import com.google.android.gms.maps.model.LatLng;
 import com.google.ar.core.Anchor;
+import com.google.ar.core.Frame;
+import com.google.ar.core.HitResult;
+import com.google.ar.core.Plane;
 import com.google.ar.core.Pose;
 import com.google.ar.core.Session;
 import com.google.ar.core.TrackingState;
@@ -34,6 +39,7 @@ import com.google.ar.sceneform.Node;
 import com.google.ar.sceneform.math.Quaternion;
 import com.google.ar.sceneform.math.Vector3;
 import com.google.ar.sceneform.rendering.ModelRenderable;
+import com.google.ar.sceneform.ux.TransformableNode;
 import com.google.firebase.database.annotations.Nullable;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentChange;
@@ -50,7 +56,9 @@ import com.lemmingapex.trilateration.TrilaterationFunction;
 import org.apache.commons.math3.fitting.leastsquares.LeastSquaresOptimizer;
 import org.apache.commons.math3.fitting.leastsquares.LevenbergMarquardtOptimizer;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
@@ -58,23 +66,19 @@ public class ARNavigation extends AppCompatActivity implements SensorEventListen
 
     private static final String TAG = ARNavigation.class.getSimpleName();
     private static final double MIN_OPENGL_VERSION = 3.0;
-    private static final double CHECK_FOR_ARRIVAL_IN_X = 4.0;
-    private static final double CHECK_FOR_ARRIVAL_IN_Y = 42;
-    private static final double WRONG_DIRECTION = 4.0;
 
     private ArrayList<Integer> shortestPath = new ArrayList<>();
     private ArrayList<Integer> coordsOfDestinationId;
     private ArrayList<Integer> coordsOfDestination;
+    private ArrayList<Integer> coordsOfCurrentPos;
 
     private CloudAnchorFragment mARFragment;
-    private ModelRenderable mObjRenderable;
+    private ModelRenderable mObjRenderable = null;
     private AnchorNode mAnchorNode = null;
     private Node arrow;
 
-    // private float currentDegree = 0f;
     private SensorManager sensorManager;
     private StepDetector simpleStepDetector;
-    private static final String TEXT_NUM_STEPS = "Number of Steps: ";
     private int numSteps = 0;
 
     private final float[] accelerometerReading = new float[3];
@@ -92,11 +96,12 @@ public class ARNavigation extends AppCompatActivity implements SensorEventListen
     double distance437=0, distance570=0, distance574 = 0;
     public double[] distanceVector = {0,0,0}, calculatedPosition = {0,0,0};
     //    double[][] positions = new double[][]{{390, 182},{664,218},{929,181}};
-    double[][] positions = new double[][]{{0.8, 2},{1.90, 2.80},{2.50, 2}};
-    // public BeaconService beaconService;
-    //private boolean mUserRequestedInstall = true;
+    double[][] positions = new double[][]{{25, 19},{335, 259},{335, 19}};
 
     private TextView textView;
+    private Plane plane;
+    private Anchor modelAnchor;
+    private Frame frame;
 
 
     @Override
@@ -107,7 +112,7 @@ public class ARNavigation extends AppCompatActivity implements SensorEventListen
         }
         setContentView(R.layout.activity_arnavigation);
 
-        ArrayList<Integer> coordsOfCurrentPos = getIntent().getIntegerArrayListExtra(DestinationActivity.COORDS_OF_CURRENT_POS);
+        coordsOfCurrentPos = getIntent().getIntegerArrayListExtra(DestinationActivity.COORDS_OF_CURRENT_POS);
         coordsOfDestinationId = getIntent().getIntegerArrayListExtra(DestinationActivity.COORDS_OF_DESTINATION_ID);
         ArrayList<Integer> coordsOfEntrance = getIntent().getIntegerArrayListExtra(DestinationActivity.COORDS_OF_ENTRANCE);
         String selectDestinationFrom = DestinationActivity.SELECT_DESTINATION_FROM;
@@ -137,6 +142,7 @@ public class ARNavigation extends AppCompatActivity implements SensorEventListen
             Path path = new Path(coordsOfCurrentPos.get(0), coordsOfDestination.get(0));
             shortestPath = path.createPath();
         }
+
 
 //        fStore = FirebaseFirestore.getInstance();
 //        storageReference = FirebaseStorage.getInstance().getReference();
@@ -196,12 +202,13 @@ public class ARNavigation extends AppCompatActivity implements SensorEventListen
         super.onStart();
         WorkRequest beaconWorker = new OneTimeWorkRequest.Builder(BeaconService.class).build();
         WorkManager.getInstance(getApplicationContext()).enqueue(beaconWorker);
+        //updateLocationUser();
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-     //   notebookListener.remove();
+   //     notebookListener.remove();
     }
 
 
@@ -294,7 +301,6 @@ public class ARNavigation extends AppCompatActivity implements SensorEventListen
     @Override
     public void step(long timeNs) {
         numSteps++;
-//        textView.setText(TEXT_NUM_STEPS + numSteps);
         updateLocationUser();
     }
 
@@ -304,35 +310,29 @@ public class ARNavigation extends AppCompatActivity implements SensorEventListen
         // Let the fragment update its state first.
         mARFragment.onUpdate(frameTime);
 
+        frame = mARFragment.getArSceneView().getArFrame();
+
         // If there is no frame then don't process anything.
-        if (mARFragment.getArSceneView().getArFrame() == null) {
+        if (frame == null) {
             return;
         }
 
         // If ARCore is not tracking yet, then don't process anything.
-        if (mARFragment.getArSceneView().getArFrame().getCamera().getTrackingState() != TrackingState.TRACKING) {
+        if (frame.getCamera().getTrackingState() != TrackingState.TRACKING) {
             return;
         }
 
-//        if (DestinationActivity.SELECT_DESTINATION_FROM.equals("fromMenu")) {
-//            if (Math.abs(coordsOfDestination.get(1) - calculatedPosition[0]) < CHECK_FOR_ARRIVAL_IN_X && Math.abs(coordsOfDestination.get(2) - calculatedPosition[1]) < CHECK_FOR_ARRIVAL_IN_Y) {
-//                // ARObject pin point and terminate app
-//            }
-//        }
-//        else {
-//            if (Math.abs(coordsOfDestinationId.get(1) - calculatedPosition[0]) < CHECK_FOR_ARRIVAL_IN_X && Math.abs(coordsOfDestinationId.get(2) - calculatedPosition[1]) < CHECK_FOR_ARRIVAL_IN_Y) {
-//                // ARObject pin point and terminate app
-//            }
-//        }
-
-        // Place the anchor 1m in front of the camera if anchorNode is null.
         if (this.mAnchorNode == null) {
             addModelToScene();
+           // updateLocationUser();
+
         }
 //        else{
 //            updateLocationUser();
 //        }
+
     }
+
 
     /**
      * It called firstly to initialize the arrow in the correct position
@@ -353,6 +353,7 @@ public class ARNavigation extends AppCompatActivity implements SensorEventListen
         arrow.setLocalRotation(Quaternion.multiply(rotation1, rotation2));
         arrow.setParent(mAnchorNode);
         //arrow.setRenderable(mObjRenderable);
+
     }
 
 
@@ -371,16 +372,16 @@ public class ARNavigation extends AppCompatActivity implements SensorEventListen
 //                        if (MinorType == ConstantsVariables.minor_437) {
 //                            distance437List = (List<Double>) documentChange.getDocument().getData().get("Distance(m)");
 //                            distance437 = distance437List.get(distance437List.size() - 1);
-//                            distanceVector[0] = distance437 / 100000; //km to meters
+//                            distanceVector[0] = distance437; //km to meters
 //
 //                        } else if (MinorType == ConstantsVariables.minor_570) {
 //                            distance570List = (List<Double>) documentChange.getDocument().getData().get("Distance(m)");
 //                            distance570 = distance570List.get(distance570List.size() - 1);
-//                            distanceVector[1] = distance570 / 100000;
+//                            distanceVector[1] = distance570;
 //                        } else if (MinorType == ConstantsVariables.minor_574) {
 //                            distance574List = (List<Double>) documentChange.getDocument().getData().get("Distance(m)");
 //                            distance574 = distance574List.get(distance574List.size() - 1);
-//                            distanceVector[2] = distance574 / 100000;
+//                            distanceVector[2] = distance574;
 //                        }
 //                    }
 //                }
@@ -392,49 +393,38 @@ public class ARNavigation extends AppCompatActivity implements SensorEventListen
 //                LeastSquaresOptimizer.Optimum optimum = solver.solve();
 //                calculatedPosition = optimum.getPoint().toArray();
 //
+//
 //                Log.d(TAG, String.valueOf(calculatedPosition[0]));
 //                Log.d(TAG, String.valueOf(calculatedPosition[1]));
 //                directUser();
 //            }
 //        });
-//        double lat = Array.getDouble(calculatedPosition, 0);
-//        double lon = Array.getDouble(calculatedPosition, 1);
-//        LatLng position;
-//        position = new LatLng(lat, lon);
 
         DatabaseHandler db = new DatabaseHandler(getApplicationContext());
         List<BeaconInfo> beaconList = db.getAllBeacons();
 
         for (BeaconInfo beaconInfo : beaconList) {
-            Log.i("beacons", String.valueOf(beaconInfo.getMinor()) + " " + String.valueOf(beaconInfo.getDistance()) + " " + String.valueOf(beaconInfo.getRssi()));
             int MinorType = beaconInfo.getMinor();
 
             if (MinorType == ConstantsVariables.minor_437) {
                 distance437 =  beaconInfo.getDistance();
-                //distance437 = 2.20;
-                distanceVector[0] = distance437; //km to meters
+                distanceVector[0] = distance437 / 100000; //km to meters
 
             } else if (MinorType == ConstantsVariables.minor_570) {
                 distance570 = beaconInfo.getDistance();
-               // distance570 = 1.10;
-                distanceVector[1] = distance570;
+                distanceVector[1] = distance570 / 100000;
 
             } else if (MinorType == ConstantsVariables.minor_574) {
                 distance574 = beaconInfo.getDistance();
-               // distance574 = 0.50;
-                distanceVector[2] = distance574;
+                distanceVector[2] = distance574 / 100000;
             }
         }
-       // Log.i(TAG, String.valueOf(distanceVector.length));
         Log.i(TAG, "Distances: " + distance437 + " / " + distance570 + " / " + distance574);
 
         //Trilateration
         NonLinearLeastSquaresSolver solver = new NonLinearLeastSquaresSolver(new TrilaterationFunction(positions, distanceVector), new LevenbergMarquardtOptimizer());
         LeastSquaresOptimizer.Optimum optimum = solver.solve();
         calculatedPosition = optimum.getPoint().toArray();
-        calculatedPosition[0] = calculatedPosition[0] * 100;
-        calculatedPosition[1] = calculatedPosition[1] * 100;
-        
         directUser();
 
     }
@@ -450,17 +440,35 @@ public class ARNavigation extends AppCompatActivity implements SensorEventListen
 
         textView.setText(new StringBuilder().append(calculatedPosition[0]).append(" ").append(calculatedPosition[1]).append("num of steps: ").append(numSteps).toString());
 
- //        // ΜΠΛΕΚΑΣ ------ ΒΛΑΧΟΣ
+
+         // ΜΠΛΕΚΑΣ ------ ΒΛΑΧΟΣ
         if (shortestPath.get(0) == 1 && shortestPath.get(1) == 2) {
 
-            if (calculatedPosition[0] >= 20 && calculatedPosition[0] <= 90 && calculatedPosition[1] >= 190 && calculatedPosition[1] <= 280) {
+            if (calculatedPosition[0] >= 15 && calculatedPosition[0] <= 100 && calculatedPosition[1] >= 20 && calculatedPosition[1] <= 170) {
                 Log.d("mphke", "forward");
                 arrow.setLocalRotation(rotation); //forward
                 arrow.setRenderable(mObjRenderable);
             }
-            else if (calculatedPosition[0] >= 90 && calculatedPosition[0] <= 170 && calculatedPosition[1] >= 190 && calculatedPosition[1] <= 280) {
+            if (calculatedPosition[0] >= 15 && calculatedPosition[0] <= 100 && calculatedPosition[1] >= 170 && calculatedPosition[1] <= 260) {
                 Log.d("mphke", "left");
                 arrow.setWorldRotation(Quaternion.axisAngle(new Vector3(0.0f, -2.3f, 0.0f), 45.0f)); //left
+                arrow.setRenderable(mObjRenderable);
+            }
+
+            if (calculatedPosition[0] >= 90 && calculatedPosition[0] <= 260 && calculatedPosition[1] >= 180 && calculatedPosition[1] <= 270) {
+                Log.d("mphke", "forward");
+                arrow.setLocalRotation(rotation); //forward
+                arrow.setRenderable(mObjRenderable);
+            }
+            if (calculatedPosition[0] >= 270 && calculatedPosition[0] <= 330 && calculatedPosition[1] >= 180 && calculatedPosition[1] <= 270) {
+                Log.d("mphke", "left");
+                arrow.setWorldRotation(Quaternion.axisAngle(new Vector3(0.0f, -2.3f, 0.0f), 45.0f)); //left
+                arrow.setRenderable(mObjRenderable);
+            }
+
+            if (calculatedPosition[0] >= 310 && calculatedPosition[0] <= 455 && calculatedPosition[1] >= 180 && calculatedPosition[1] <= 270) {
+                Log.d("mphke", "forward");
+                arrow.setLocalRotation(rotation); //forward
                 arrow.setRenderable(mObjRenderable);
             }
 
@@ -1784,8 +1792,6 @@ public class ARNavigation extends AppCompatActivity implements SensorEventListen
 //        }
 
     }
-
-
 
 
 

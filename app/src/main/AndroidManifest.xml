@@ -31,7 +31,6 @@
         android:hardwareAccelerated="true"
         android:theme="@style/Theme.ARNavDemo">
         <activity android:name="com.example.indoornavigation.ARNavigation" />
-        <activity android:name="com.example.indoornavigation.UserLocation" />
         <activity android:name="com.example.indoornavigation.DestinationActivity" />
         <activity android:name="com.example.indoornavigation.CurrentLocationActivity" />
         <activity android:name="com.example.indoornavigation.ExplanationApp" />

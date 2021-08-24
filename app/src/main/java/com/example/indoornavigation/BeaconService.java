@@ -90,7 +90,7 @@ public class BeaconService extends Worker {
 //                            if (task.isSuccessful()) {
 //                                Log.i(TAG, "iffffff");
 //                                DocumentSnapshot documentSnapshot = task.getResult();
-//                                Distance = (float) calculateDistance(applyKalmanFilterToRssi(result.getRssi()));
+//                                Distance = (float) calculateDistance(result.getRssi());
 //                                DistanceSecondMethod = (float) calculateDistanceSecondMethod(applyKalmanFilterToRssi(result.getRssi()));
 //                                if (documentSnapshot != null && documentSnapshot.exists()) {
 //                                    docref.update("RSSI", FieldValue.arrayUnion(result.getRssi()));
